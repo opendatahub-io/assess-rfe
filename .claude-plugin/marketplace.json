@@ -1,4 +1,8 @@
 {
+  "name": "assess-rfe",
+  "owner": {
+    "name": "opendatahub-io"
+  },
   "plugins": [
     {
       "name": "assess-rfe",
