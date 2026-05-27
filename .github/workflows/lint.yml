@@ -1,32 +1,20 @@
 name: Lint
 
 on:
+  pull_request:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-  lint:
+  skillsaw:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-    - name: Set up Python
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       with:
-        python-version: '3.13'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install skillsaw==0.12.1
-
-    - name: Run lint
-      run: make lint
-      env:
-        SKILLSAW_BIN: skillsaw
+        persist-credentials: false
+    - uses: stbenjam/skillsaw@674e62bc612ba7740048f24155b27070a3e71d89 # v0.12.1
+      with:
+        strict: 'true'
