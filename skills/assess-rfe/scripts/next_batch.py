@@ -19,7 +19,6 @@ Output (stdout):
 
 import argparse
 import os
-import sys
 
 
 def main():

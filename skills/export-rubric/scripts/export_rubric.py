@@ -2,7 +2,6 @@
 """Export the scoring rubric from agent_prompt.md to a standalone markdown file."""
 
 import pathlib
-import sys
 
 def main():
     script_dir = pathlib.Path(__file__).resolve().parent
