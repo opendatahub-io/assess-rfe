@@ -83,7 +83,7 @@ Then assess:
   - `RUN_DIR=<path>` — the absolute path to use for this run
   - `PENDING=<count>` — number of issues to assess
   - `QUEUE_FILE=<path>` — path to the queue file containing all pending keys (one per line)
-- Parse the output to get `{RUN_DIR}` and `{PENDING}` count. **Do NOT try to memorize or generate the key list yourself** — the queue file is the single source of truth for which keys to process.
+- Parse the output to get `{RUN_DIR}` and `{PENDING}` count. **Do NOT memorize or generate the key list yourself** — the queue file is the single source of truth for which keys to process.
 
 **Phase 2: Assess with a pipeline of 30 concurrent agents.**
 - Use `next_batch.py` to get keys from the queue. **Never generate key sequences yourself** (e.g., "RHAIRFE-1 through RHAIRFE-30") — always get keys from the script to avoid assessing non-existent issues.
