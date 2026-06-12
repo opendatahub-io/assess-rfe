@@ -9,7 +9,7 @@ skillsaw: ## Run skillsaw linter on skills and plugins
 	@if [ -n "$${SKILLSAW_BIN:-}" ]; then \
 		"$${SKILLSAW_BIN}"; \
 	else \
-		uvx skillsaw@0.12.1; \
+		uvx skillsaw@0.13.1; \
 	fi
 
 .PHONY: skillsaw-fix
@@ -18,7 +18,7 @@ skillsaw-fix: ## Auto-fix fixable skillsaw issues
 	@if [ -n "$${SKILLSAW_BIN:-}" ]; then \
 		"$${SKILLSAW_BIN}" fix; \
 	else \
-		uvx skillsaw@0.12.1 fix; \
+		uvx skillsaw@0.13.1 fix; \
 	fi
 
 .PHONY: lint
