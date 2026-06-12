@@ -16,13 +16,14 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, TaskGet, mcp__atlassi
 
 ## Instructions
 
-### Plugin Root
+### Skill Directory
 
-When this skill is invoked, resolve the absolute path of the plugin root directory. This SKILL.md is at `<plugin_root>/skills/assess-rfe/SKILL.md` — the plugin root is two levels up. Determine this path once at the start and use it for all script and file references. Store it as `{PLUGIN_ROOT}` for substitution into commands and agent prompts.
+All scripts are bundled in the `scripts/` subdirectory next to this SKILL.md. Use `${CLAUDE_SKILL_DIR}` (the directory containing this file) as the base for all script and file references.
 
 ### Rules
 
-- **No shell pipes or compound commands.** Run all scripts as simple commands (e.g., `python3 {PLUGIN_ROOT}/scripts/setup_run.py RHAIRFE`). Do not use `|`, `&&`, `;`, `2>/dev/null`, or redirects. The Bash tool returns command output as a string — parse it programmatically in your logic, not with `sed`/`awk`/`wc`/`grep` pipelines.
+- **Run all scripts as simple commands** (e.g., `python3 ${CLAUDE_SKILL_DIR}/scripts/setup_run.py RHAIRFE`). Shell pipes (`|`), chaining (`&&`, `;`), redirects, and `2>/dev/null` are not supported. The Bash tool returns command output as a string; parse it programmatically in your logic instead of using `sed`/`awk`/`wc`/`grep` pipelines.
+- **Always substitute all placeholders** in agent launch prompts with actual values before passing them. Replace `{PROMPT_PATH}` with the absolute path of `${CLAUDE_SKILL_DIR}/scripts/agent_prompt.md`, and substitute `{DATA_FILE}`, `{KEY}`, and `{RUN_DIR}` with their actual values.
 
 ### Architecture
 
@@ -49,13 +50,13 @@ assessments/RHAIRFE/                  # in the project directory (persistent)
 Detect the input type:
 - **Jira issue key** (matches `[A-Z]+-\d+`): Try MCP first, then fall back to the REST API:
   1. **Try MCP:** Call `mcp__atlassian__getJiraIssue` with the key and `cloudId="https://redhat.atlassian.net"`. If the call succeeds, extract the summary and description.
-  2. **Fallback to REST API:** If the MCP call fails (tool not available, connection error, or any other error), fall back to the Jira REST API by running `python3 {PLUGIN_ROOT}/scripts/fetch_single.py {KEY}`. This requires `JIRA_SERVER` (or `JIRA_URL`/`JIRA_BASE_URL`), `JIRA_USER` (or `JIRA_EMAIL`), and `JIRA_TOKEN` (or `JIRA_API_TOKEN`) environment variables. The script fetches the issue, converts ADF to markdown, and writes it directly to `/tmp/rfe-assess/single/{KEY}.md`. Parse its output for `ENV_OK=false` / `ENV_MISSING=...` — if env vars are missing, prompt the user to set them (same guidance as Phase 0 of bulk mode). If the script succeeds, skip the Write step below since the script already wrote the file.
+  2. **Fallback to REST API:** If the MCP call fails (tool not available, connection error, or any other error), fall back to the Jira REST API by running `python3 ${CLAUDE_SKILL_DIR}/scripts/fetch_single.py {KEY}`. This requires `JIRA_SERVER` (or `JIRA_URL`/`JIRA_BASE_URL`), `JIRA_USER` (or `JIRA_EMAIL`), and `JIRA_TOKEN` (or `JIRA_API_TOKEN`) environment variables. The script fetches the issue, converts ADF to markdown, and writes it directly to `/tmp/rfe-assess/single/{KEY}.md`. Parse its output for `ENV_OK=false` / `ENV_MISSING=...` — if env vars are missing, prompt the user to set them (same guidance as Phase 0 of bulk mode). If the script succeeds, skip the Write step below since the script already wrote the file.
 - **File path** (starts with `/` or `./` or `~`, or exists on disk): Read the file contents.
 - **URL** (starts with `http://` or `https://`): Fetch the content.
 - **Raw text**: Use the input directly as the content to assess.
 
 Then assess:
-1. Run `python3 {PLUGIN_ROOT}/scripts/prep_single.py {KEY}` to clean up stale files and ensure the output directory exists. This removes any previous `.md` and `.result.md` for the key so Write sees them as new files.
+1. Run `python3 ${CLAUDE_SKILL_DIR}/scripts/prep_single.py {KEY}` to clean up stale files and ensure the output directory exists. This removes any previous `.md` and `.result.md` for the key so Write sees them as new files.
 2. Write the fetched content to `/tmp/rfe-assess/single/{KEY}.md` using the same `# KEY: Title` format as the cache files. For non-Jira inputs, use a descriptive key (e.g., filename or `INPUT`). This is a separate directory from the bulk cache — never write single-mode files into `/tmp/rfe-assess/RHAIRFE/` as that would clobber cached bulk data. **Note:** If the REST API fallback (`fetch_single.py`) was used, the file is already written — skip this step.
 3. Spawn one background agent (model: opus, run_in_background: true, subagent_type: assess-rfe:rfe-scorer) using the same launch prompt as Phase 2, with `{DATA_FILE}` set to `/tmp/rfe-assess/single/{KEY}.md` and `{RUN_DIR}` set to `/tmp/rfe-assess/single`.
 4. Read the result from `/tmp/rfe-assess/single/{KEY}.result.md`, wrap it with a header, and present it to the user.
@@ -63,7 +64,7 @@ Then assess:
 #### Bulk (`RHAIRFE-*`)
 
 **Phase 0: Preflight checks.**
-- Run `python3 {PLUGIN_ROOT}/scripts/preflight.py RHAIRFE` to check environment variables and current run state. Parse the output:
+- Run `python3 ${CLAUDE_SKILL_DIR}/scripts/preflight.py RHAIRFE` to check environment variables and current run state. Parse the output:
   - `ENV_OK=true/false` and `ENV_MISSING=...` — if env vars are missing, prompt the user:
     - `JIRA_SERVER` (or `JIRA_URL` or `JIRA_BASE_URL`): The Jira instance URL (e.g., `https://redhat.atlassian.net`)
     - `JIRA_USER` (or `JIRA_EMAIL`): Their Jira email address
@@ -75,10 +76,10 @@ Then assess:
   - If there is an incomplete current run (`CURRENT_COMPLETE=false`), inform the user it will be resumed.
 
 **Phase 1: Fetch all issues to local files.**
-- Run `python3 {PLUGIN_ROOT}/scripts/dump_jira.py RHAIRFE` to fetch every issue in the project via the Jira REST API. This writes one file per issue to `/tmp/rfe-assess/RHAIRFE/` (e.g., `RHAIRFE-42.md`). The script renders Jira's ADF content as proper markdown, preserving headings, lists, tables, links, and emphasis.
+- Run `python3 ${CLAUDE_SKILL_DIR}/scripts/dump_jira.py RHAIRFE` to fetch every issue in the project via the Jira REST API. This writes one file per issue to `/tmp/rfe-assess/RHAIRFE/` (e.g., `RHAIRFE-42.md`). The script renders Jira's ADF content as proper markdown, preserving headings, lists, tables, links, and emphasis.
 
 **Phase 1.5: Set up run directory.**
-- Run `python3 {PLUGIN_ROOT}/scripts/setup_run.py RHAIRFE` (add `--limit N` if the user requested a subset).
+- Run `python3 ${CLAUDE_SKILL_DIR}/scripts/setup_run.py RHAIRFE` (add `--limit N` if the user requested a subset).
 - The script handles all resume logic (checking `current` symlink, `scores.csv` presence, creating timestamped directories, updating symlinks) and outputs:
   - `RUN_DIR=<path>` — the absolute path to use for this run
   - `PENDING=<count>` — number of issues to assess
@@ -88,7 +89,7 @@ Then assess:
 **Phase 2: Assess with a pipeline of 30 concurrent agents.**
 - Use `next_batch.py` to get keys from the queue. **Never generate key sequences yourself** (e.g., "RHAIRFE-1 through RHAIRFE-30") — always get keys from the script to avoid assessing non-existent issues.
 - **Launch loop:** Repeat until `BATCH_SIZE=0` (queue empty):
-  1. Run `python3 {PLUGIN_ROOT}/scripts/next_batch.py {RUN_DIR} --batch-size 30` to pop the next batch of keys. Parse the output:
+  1. Run `python3 ${CLAUDE_SKILL_DIR}/scripts/next_batch.py {RUN_DIR} --batch-size 30` to pop the next batch of keys. Parse the output:
      - `BATCH_SIZE=N` — number of keys in this batch (0 = queue exhausted)
      - `REMAINING=N` — keys still in queue after this batch
      - Keys listed after the `---` separator
@@ -101,22 +102,18 @@ Then assess:
      Data file: {DATA_FILE}
      Run directory: {RUN_DIR}
      ```
-     The coordinator MUST substitute all placeholders with actual values before passing this prompt to the agent:
-     - `{PROMPT_PATH}` → absolute path of `{PLUGIN_ROOT}/scripts/agent_prompt.md`
-     - `{DATA_FILE}` → for bulk: `/tmp/rfe-assess/RHAIRFE/{KEY}.md`, for single: `/tmp/rfe-assess/single/{KEY}.md`
-     - `{KEY}` and `{RUN_DIR}` → actual values
-     This ensures every agent reads the identical rubric from the single source of truth — no drift from coordinator paraphrasing.
+     Substitute all placeholders with actual values (see Rules section above). This ensures every agent reads the identical rubric from the single source of truth.
   3. Wait for agents to complete (poll every 30 seconds), then loop back to step 1 to pop the next batch.
 - **Active polling:** Poll running agents every 30 seconds. Do not passively wait for completion notifications — they can be missed, causing the pipeline to hang. If an agent has been running for more than 5 minutes, check its status and collect its result if done.
-- **Progress checking:** Run `python3 {PLUGIN_ROOT}/scripts/check_progress.py {RUN_DIR}` to get `COMPLETED=N`, `TOTAL=N`, `REMAINING=N`. Never use shell pipes (`ls | wc -l`) or text-processing commands (`sed`, `awk`, `grep`) to check progress — use this script or the Glob tool instead.
+- **Progress checking:** Run `python3 ${CLAUDE_SKILL_DIR}/scripts/check_progress.py {RUN_DIR}` to get `COMPLETED=N`, `TOTAL=N`, `REMAINING=N`. Never use shell pipes (`ls | wc -l`) or text-processing commands (`sed`, `awk`, `grep`) to check progress — use this script or the Glob tool instead.
 
 **Phase 3: Generate CSV and present results.**
-- Run `python3 {PLUGIN_ROOT}/scripts/parse_results.py {RUN_DIR}` to parse all `.result.md` files and generate `{RUN_DIR}/scores.csv`. The presence of `scores.csv` marks the run as complete.
-- Run `python3 {PLUGIN_ROOT}/scripts/summarize_run.py {RUN_DIR}` to produce the full summary analysis (pass/fail counts, score distribution, criteria averages, zero-score counts, what-if analysis, near-miss failures). Present the output to the user.
+- Run `python3 ${CLAUDE_SKILL_DIR}/scripts/parse_results.py {RUN_DIR}` to parse all `.result.md` files and generate `{RUN_DIR}/scores.csv`. The presence of `scores.csv` marks the run as complete.
+- Run `python3 ${CLAUDE_SKILL_DIR}/scripts/summarize_run.py {RUN_DIR}` to produce the full summary analysis (pass/fail counts, score distribution, criteria averages, zero-score counts, what-if analysis, near-miss failures). Present the output to the user.
 
 ### Agent Prompt Template
 
-The full agent prompt is stored in `{PLUGIN_ROOT}/scripts/agent_prompt.md`. This is the single source of truth for the scoring rubric, calibration examples, and output format.
+The full agent prompt is stored in `${CLAUDE_SKILL_DIR}/scripts/agent_prompt.md`. This is the single source of truth for the scoring rubric, calibration examples, and output format.
 
 - **Bulk mode:** Each agent reads the file itself at runtime (see Phase 2 launch prompt). The coordinator does NOT embed the rubric — this eliminates prompt drift from paraphrasing or abbreviation.
 - **Single-input mode:** Same launch prompt, with `{DATA_FILE}` set to `/tmp/rfe-assess/single/{KEY}.md` and `{RUN_DIR}` set to `/tmp/rfe-assess/single`. The agent writes its result there just like bulk agents.
@@ -159,16 +156,15 @@ Add to your user or project `.claude/settings.json`:
 {
   "permissions": {
     "allow": [
-      "Bash(python3 <PLUGIN_PATH>/scripts/preflight.py:*)",
-      "Bash(python3 <PLUGIN_PATH>/scripts/dump_jira.py:*)",
-      "Bash(python3 <PLUGIN_PATH>/scripts/setup_run.py:*)",
-      "Bash(python3 <PLUGIN_PATH>/scripts/next_batch.py:*)",
-      "Bash(python3 <PLUGIN_PATH>/scripts/check_progress.py:*)",
-      "Bash(python3 <PLUGIN_PATH>/scripts/parse_results.py:*)",
-      "Bash(python3 <PLUGIN_PATH>/scripts/summarize_run.py:*)",
-      "Bash(python3 <PLUGIN_PATH>/scripts/export_rubric.py:*)",
-      "Bash(python3 <PLUGIN_PATH>/scripts/fetch_single.py:*)",
-      "Bash(python3 <PLUGIN_PATH>/scripts/prep_single.py:*)",
+      "Bash(python3 <SKILL_PATH>/scripts/preflight.py:*)",
+      "Bash(python3 <SKILL_PATH>/scripts/dump_jira.py:*)",
+      "Bash(python3 <SKILL_PATH>/scripts/setup_run.py:*)",
+      "Bash(python3 <SKILL_PATH>/scripts/next_batch.py:*)",
+      "Bash(python3 <SKILL_PATH>/scripts/check_progress.py:*)",
+      "Bash(python3 <SKILL_PATH>/scripts/parse_results.py:*)",
+      "Bash(python3 <SKILL_PATH>/scripts/summarize_run.py:*)",
+      "Bash(python3 <SKILL_PATH>/scripts/fetch_single.py:*)",
+      "Bash(python3 <SKILL_PATH>/scripts/prep_single.py:*)",
       "Bash(mkdir:*)",
       "Bash(ls:*)",
       "mcp__atlassian__getJiraIssue",
@@ -176,10 +172,10 @@ Add to your user or project `.claude/settings.json`:
     ],
     "additionalDirectories": [
       "/tmp/rfe-assess",
-      "<PLUGIN_PATH>"
+      "<SKILL_PATH>"
     ]
   }
 }
 ```
 
-`<PLUGIN_PATH>` is a placeholder — manually replace it with the absolute path to this plugin (e.g., `/Users/you/devel/assess-rfe`) before adding to your settings. The `additionalDirectories` entries allow agents to read the scoring rubric from the plugin directory and read/write cached issues and results in `/tmp/rfe-assess/`.
+`<SKILL_PATH>` is a placeholder for the absolute path to the `skills/assess-rfe/` directory in this plugin. The `additionalDirectories` entries allow agents to read the scoring rubric and scripts, and read/write cached issues and results in `/tmp/rfe-assess/`.

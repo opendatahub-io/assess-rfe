@@ -18,7 +18,7 @@ def main():
         "# RFE Assessment Rubric\n"
         "\n"
         "> Exported from the assess-rfe plugin. This is a read-only reference copy.\n"
-        "> Source of truth: `scripts/agent_prompt.md` in the assess-rfe plugin.\n"
+        "> Source of truth: `skills/assess-rfe/scripts/agent_prompt.md` in the assess-rfe plugin.\n"
         "\n"
         + rubric
         + "\n"

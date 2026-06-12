@@ -11,13 +11,13 @@ allowed-tools: Read, Write, Bash
 
 ## Instructions
 
-### Plugin Root
+### Skill Directory
 
-When this skill is invoked, resolve the absolute path of the plugin root directory. This SKILL.md is at `<plugin_root>/skills/export-rubric/SKILL.md` — the plugin root is two levels up. Determine this path once at the start.
+All scripts are bundled in the `scripts/` subdirectory next to this SKILL.md. Use `${CLAUDE_SKILL_DIR}` (the directory containing this file) as the base for all script and file references.
 
 ### Steps
 
-1. Run `python3 {PLUGIN_ROOT}/scripts/export_rubric.py` from the current working directory.
+1. Run `python3 ${CLAUDE_SKILL_DIR}/scripts/export_rubric.py` from the current working directory.
 2. Confirm the file was written and print its path.
 
 ### Required Permissions
@@ -28,10 +28,10 @@ Add to your user or project `.claude/settings.json`:
 {
   "permissions": {
     "allow": [
-      "Bash(python3 <PLUGIN_PATH>/scripts/export_rubric.py:*)"
+      "Bash(python3 <SKILL_PATH>/scripts/export_rubric.py:*)"
     ]
   }
 }
 ```
 
-`<PLUGIN_PATH>` is a placeholder — replace with the absolute path to this plugin.
+`<SKILL_PATH>` is a placeholder for the absolute path to the `skills/export-rubric/` directory in this plugin.
