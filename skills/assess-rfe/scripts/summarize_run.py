@@ -52,7 +52,10 @@ def summarize(rows):
     criteria = ["WHAT", "WHY", "HOW", "Task", "Size"]
 
     # Averages (exclude errors)
-    avgs = {c: sum(r[c] for r in assessed) / na for c in criteria} if na > 0 else {c: 0 for c in criteria}
+    if na > 0:
+        avgs = {c: sum(r[c] for r in assessed) / na for c in criteria}
+    else:
+        avgs = {c: 0 for c in criteria}
     avg_total = sum(r["Total"] for r in assessed) / na if na > 0 else 0
 
     # Zero counts (exclude errors)
@@ -136,8 +139,9 @@ def summarize(rows):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("path", help="Run directory or scores.csv path")
     args = parser.parse_args()
 

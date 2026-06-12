@@ -21,7 +21,12 @@ def main():
 
     # Check env vars (accept common alternative names)
     missing = []
-    if not (os.environ.get("JIRA_SERVER") or os.environ.get("JIRA_URL") or os.environ.get("JIRA_BASE_URL")):
+    has_server = (
+        os.environ.get("JIRA_SERVER")
+        or os.environ.get("JIRA_URL")
+        or os.environ.get("JIRA_BASE_URL")
+    )
+    if not has_server:
         missing.append("JIRA_SERVER")
     if not (os.environ.get("JIRA_USER") or os.environ.get("JIRA_EMAIL")):
         missing.append("JIRA_USER")

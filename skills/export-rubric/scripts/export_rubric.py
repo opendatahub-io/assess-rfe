@@ -3,6 +3,7 @@
 
 import pathlib
 
+
 def main():
     script_dir = pathlib.Path(__file__).resolve().parent
     src = (script_dir / "agent_prompt.md").read_text()
@@ -18,11 +19,10 @@ def main():
         "\n"
         "> Exported from the assess-rfe plugin. This is a read-only reference copy.\n"
         "> Source of truth: `skills/assess-rfe/scripts/agent_prompt.md` in the assess-rfe plugin.\n"
-        "\n"
-        + rubric
-        + "\n"
+        "\n" + rubric + "\n"
     )
     print(f"Wrote {out.resolve()}")
+
 
 if __name__ == "__main__":
     main()

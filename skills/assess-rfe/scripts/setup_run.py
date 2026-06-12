@@ -17,15 +17,23 @@ from datetime import datetime
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("project", help="Project key (e.g., RHAIRFE)")
-    parser.add_argument("--limit", type=int, default=0,
-                        help="Limit number of pending keys (0 = all)")
-    parser.add_argument("--assess-dir", default="assessments",
-                        help="Base assessments directory (default: assessments)")
-    parser.add_argument("--cache-dir", default="/tmp/rfe-assess",
-                        help="Issue cache directory (default: /tmp/rfe-assess)")
+    parser.add_argument(
+        "--limit", type=int, default=0, help="Limit number of pending keys (0 = all)"
+    )
+    parser.add_argument(
+        "--assess-dir",
+        default="assessments",
+        help="Base assessments directory (default: assessments)",
+    )
+    parser.add_argument(
+        "--cache-dir",
+        default="/tmp/rfe-assess",
+        help="Issue cache directory (default: /tmp/rfe-assess)",
+    )
     args = parser.parse_args()
 
     project = args.project
@@ -73,15 +81,13 @@ def main():
     assessed = set()
     if os.path.isdir(run_dir):
         assessed = {
-            f.replace(".result.md", "")
-            for f in os.listdir(run_dir)
-            if f.endswith(".result.md")
+            f.replace(".result.md", "") for f in os.listdir(run_dir) if f.endswith(".result.md")
         }
 
     # Pending keys
     pending = [k for k in all_keys if k not in assessed]
     if args.limit > 0:
-        pending = pending[:args.limit]
+        pending = pending[: args.limit]
 
     # Write pending keys to queue file in run directory
     run_dir_abs = os.path.abspath(run_dir)
@@ -99,8 +105,10 @@ def main():
     print(f"RESUMING={'true' if resuming else 'false'}")
 
     if resuming:
-        print(f"Resuming run: {run_dir_abs} ({len(assessed)} done, {len(pending)} remaining)",
-              file=sys.stderr)
+        print(
+            f"Resuming run: {run_dir_abs} ({len(assessed)} done, {len(pending)} remaining)",
+            file=sys.stderr,
+        )
     else:
         print(f"New run: {run_dir_abs} ({len(pending)} issues)", file=sys.stderr)
 
