@@ -52,7 +52,10 @@ def summarize(rows):
     criteria = ["WHAT", "WHY", "HOW", "Task", "Size"]
 
     # Averages (exclude errors)
-    avgs = {c: sum(r[c] for r in assessed) / na for c in criteria} if na > 0 else {c: 0 for c in criteria}
+    if na > 0:
+        avgs = {c: sum(r[c] for r in assessed) / na for c in criteria}
+    else:
+        avgs = {c: 0 for c in criteria}
     avg_total = sum(r["Total"] for r in assessed) / na if na > 0 else 0
 
     # Zero counts (exclude errors)
@@ -82,7 +85,7 @@ def summarize(rows):
     near_misses.sort(key=lambda x: -x[2])
 
     # Output
-    print(f"## Assessment Summary")
+    print("## Assessment Summary")
     print()
     print(f"- **Total assessed:** {na}")
     print(f"- **Passed:** {np} ({rate:.1f}%)")
@@ -91,10 +94,10 @@ def summarize(rows):
         print(f"- **Errors (data not found):** {ne}")
     print()
 
-    print(f"### Score Distribution")
+    print("### Score Distribution")
     print()
-    print(f"| Score | Count | Bar |")
-    print(f"|-------|-------|-----|")
+    print("| Score | Count | Bar |")
+    print("|-------|-------|-----|")
     for s in range(11):
         count = dist.get(s, 0)
         bar = "#" * count
@@ -102,32 +105,32 @@ def summarize(rows):
             print(f"| {s}/10  | {count:>5} | {bar} |")
     print()
 
-    print(f"### Criteria Averages")
+    print("### Criteria Averages")
     print()
-    print(f"| Criterion | Avg  | Zeros | Zero % |")
-    print(f"|-----------|------|-------|--------|")
+    print("| Criterion | Avg  | Zeros | Zero % |")
+    print("|-----------|------|-------|--------|")
     for c in criteria:
         zp = zeros[c] / na * 100 if na > 0 else 0
         print(f"| {c:<9} | {avgs[c]:.2f} | {zeros[c]:>5} | {zp:>5.1f}% |")
     print(f"| **Total** | **{avg_total:.2f}** | | |")
     print()
 
-    print(f"### What-If Analysis (if zeros became 1)")
+    print("### What-If Analysis (if zeros became 1)")
     print()
-    print(f"| Criterion | Additional passes |")
-    print(f"|-----------|-------------------|")
+    print("| Criterion | Additional passes |")
+    print("|-----------|-------------------|")
     for c in criteria:
         if what_if[c] > 0:
             print(f"| {c:<9} | +{what_if[c]} |")
     if not any(what_if.values()):
-        print(f"| (none)    | Most failures have multiple zeros |")
+        print("| (none)    | Most failures have multiple zeros |")
     print()
 
     if near_misses:
-        print(f"### Near-Miss Failures (total >= 6, exactly one zero)")
+        print("### Near-Miss Failures (total >= 6, exactly one zero)")
         print()
-        print(f"| ID | Title | Total | Zero on |")
-        print(f"|----|-------|-------|---------|")
+        print("| ID | Title | Total | Zero on |")
+        print("|----|-------|-------|---------|")
         for key, title, total, zero_c in near_misses[:15]:
             print(f"| {key} | {title} | {total}/10 | {zero_c} |")
         if len(near_misses) > 15:
@@ -136,8 +139,9 @@ def summarize(rows):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("path", help="Run directory or scores.csv path")
     args = parser.parse_args()
 

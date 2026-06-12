@@ -14,9 +14,10 @@ Writes to /tmp/rfe-assess/single/{KEY}.md in the same format as dump_jira.py.
 
 import os
 import sys
+
 # Import shared helpers from dump_jira
 sys.path.insert(0, os.path.dirname(__file__))
-from dump_jira import make_request, adf_to_markdown
+from dump_jira import adf_to_markdown, make_request
 
 
 def main():
@@ -26,7 +27,11 @@ def main():
 
     key = sys.argv[1]
 
-    server = os.environ.get("JIRA_SERVER") or os.environ.get("JIRA_URL") or os.environ.get("JIRA_BASE_URL")
+    server = (
+        os.environ.get("JIRA_SERVER")
+        or os.environ.get("JIRA_URL")
+        or os.environ.get("JIRA_BASE_URL")
+    )
     user = os.environ.get("JIRA_USER") or os.environ.get("JIRA_EMAIL")
     token = os.environ.get("JIRA_TOKEN") or os.environ.get("JIRA_API_TOKEN")
 

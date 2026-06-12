@@ -26,8 +26,15 @@ def extract_scores(text):
     lower_text = text.lower()
     if "data file not found" in lower_text or "unable to assess" in lower_text:
         if re.search(r"-\s*/\s*2", text):
-            return {"WHAT": 0, "WHY": 0, "HOW": 0, "Task": 0, "Size": 0,
-                    "Total": 0, "Pass_Fail": "ERROR"}
+            return {
+                "WHAT": 0,
+                "WHY": 0,
+                "HOW": 0,
+                "Task": 0,
+                "Size": 0,
+                "Total": 0,
+                "Pass_Fail": "ERROR",
+            }
 
     what = why = how = task = size = total = pf = None
 
@@ -87,8 +94,15 @@ def extract_scores(text):
         )
 
     if all(x is not None for x in [what, why, how, task, size, total]):
-        return {"WHAT": what, "WHY": why, "HOW": how, "Task": task, "Size": size,
-                "Total": total, "Pass_Fail": pf}
+        return {
+            "WHAT": what,
+            "WHY": why,
+            "HOW": how,
+            "Task": task,
+            "Size": size,
+            "Total": total,
+            "Pass_Fail": pf,
+        }
     return None
 
 
@@ -102,10 +116,13 @@ def extract_title(text):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("result_dir",
-                        help="Directory containing .result.md files")
-    parser.add_argument("-o", "--output", default=None,
-                        help="Output CSV path (default: <result_dir>/../<project>-scores.csv)")
+    parser.add_argument("result_dir", help="Directory containing .result.md files")
+    parser.add_argument(
+        "-o",
+        "--output",
+        default=None,
+        help="Output CSV path (default: <result_dir>/../<project>-scores.csv)",
+    )
     args = parser.parse_args()
 
     result_dir = args.result_dir.rstrip("/")
@@ -142,11 +159,13 @@ def main():
             continue
 
         title = extract_title(text)
-        rows.append({
-            "ID": key,
-            "Title": title,
-            **scores,
-        })
+        rows.append(
+            {
+                "ID": key,
+                "Title": title,
+                **scores,
+            }
+        )
 
     # Write CSV
     fieldnames = ["ID", "Title", "WHAT", "WHY", "HOW", "Task", "Size", "Total", "Pass_Fail"]
@@ -164,7 +183,11 @@ def main():
     if errors:
         print(f"  Errors (data not found): {errors}", file=sys.stderr)
     if failed_parse:
-        print(f"  Could not parse: {len(failed_parse)} files: {', '.join(failed_parse[:10])}", file=sys.stderr)
+        names = ", ".join(failed_parse[:10])
+        print(
+            f"  Could not parse: {len(failed_parse)} files: {names}",
+            file=sys.stderr,
+        )
 
 
 if __name__ == "__main__":

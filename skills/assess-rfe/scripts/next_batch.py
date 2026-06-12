@@ -19,15 +19,16 @@ Output (stdout):
 
 import argparse
 import os
-import sys
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("run_dir", help="Run directory containing queue.txt")
-    parser.add_argument("--batch-size", type=int, default=30,
-                        help="Number of keys to return (default: 30)")
+    parser.add_argument(
+        "--batch-size", type=int, default=30, help="Number of keys to return (default: 30)"
+    )
     args = parser.parse_args()
 
     queue_file = os.path.join(args.run_dir, "queue.txt")
@@ -41,8 +42,8 @@ def main():
     with open(queue_file, "r", encoding="utf-8") as f:
         keys = [line.strip() for line in f if line.strip()]
 
-    batch = keys[:args.batch_size]
-    remaining = keys[args.batch_size:]
+    batch = keys[: args.batch_size]
+    remaining = keys[args.batch_size :]
 
     # Rewrite queue with remaining keys
     with open(queue_file, "w", encoding="utf-8") as f:

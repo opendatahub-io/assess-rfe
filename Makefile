@@ -9,7 +9,7 @@ skillsaw: ## Run skillsaw linter on skills and plugins
 	@if [ -n "$${SKILLSAW_BIN:-}" ]; then \
 		"$${SKILLSAW_BIN}"; \
 	else \
-		uvx skillsaw@0.12.1; \
+		uvx skillsaw@0.13.1; \
 	fi
 
 .PHONY: skillsaw-fix
@@ -18,11 +18,20 @@ skillsaw-fix: ## Auto-fix fixable skillsaw issues
 	@if [ -n "$${SKILLSAW_BIN:-}" ]; then \
 		"$${SKILLSAW_BIN}" fix; \
 	else \
-		uvx skillsaw@0.12.1 fix; \
+		uvx skillsaw@0.13.1 fix; \
 	fi
 
 .PHONY: lint
-lint: ## Run all linters
+lint: ## Run skillsaw and ruff
 	@$(MAKE) skillsaw
+	@echo "Running ruff syntax checker on Python scripts..."
+	@if command -v ruff >/dev/null 2>&1; then \
+		ruff check .; \
+	else \
+		echo "ruff not found, skipping Python syntax checking. Install with: pip install ruff"; \
+		exit 1; \
+	fi
+	@echo "Running ruff format checker on Python scripts..."
+	@ruff format --check --diff .
 
 .DEFAULT_GOAL := help
