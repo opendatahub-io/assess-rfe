@@ -15,6 +15,9 @@ import os
 import sys
 from collections import Counter
 
+RFE_CRITERIA = ["WHAT", "WHY", "HOW", "Task", "Size"]
+INITIATIVE_CRITERIA = ["WHAT", "WHY", "Scope", "HOW", "Size"]
+
 
 def load_scores(path):
     """Load scores from CSV file or directory containing scores.csv."""
@@ -25,21 +28,41 @@ def load_scores(path):
         sys.exit(1)
 
     rows = []
+    criteria = None
     with open(path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
+        if criteria is None:
+            headers = reader.fieldnames or []
+            if "Scope" in headers:
+                criteria = INITIATIVE_CRITERIA
+            else:
+                criteria = RFE_CRITERIA
         for row in reader:
-            for col in ["WHAT", "WHY", "HOW", "Task", "Size", "Total"]:
-                row[col] = int(row[col])
+            for col in criteria + ["Total"]:
+                raw = (row.get(col) or "").strip()
+                if not raw:
+                    # parse_results.py widens the header when a run mixes rubric
+                    # types, leaving blanks rather than truncating the file.
+                    print(
+                        f"ERROR: {path} row {row.get('ID')} has no {col} score — this run "
+                        f"mixes RFE and initiative results; split them into separate runs",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+                row[col] = int(raw)
             rows.append(row)
-    return rows
+    return rows, criteria
 
 
-def summarize(rows):
+def summarize(rows, criteria=None):
     """Print summary analysis."""
     n = len(rows)
     if n == 0:
         print("No results to summarize.")
         return
+
+    if criteria is None:
+        criteria = RFE_CRITERIA
 
     errors = [r for r in rows if r["Pass_Fail"] == "ERROR"]
     assessed = [r for r in rows if r["Pass_Fail"] != "ERROR"]
@@ -48,8 +71,6 @@ def summarize(rows):
     na = len(assessed)
     np, nf, ne = len(passed), len(failed), len(errors)
     rate = np / na * 100 if na > 0 else 0
-
-    criteria = ["WHAT", "WHY", "HOW", "Task", "Size"]
 
     # Averages (exclude errors)
     if na > 0:
@@ -145,8 +166,8 @@ def main():
     parser.add_argument("path", help="Run directory or scores.csv path")
     args = parser.parse_args()
 
-    rows = load_scores(args.path)
-    summarize(rows)
+    rows, criteria = load_scores(args.path)
+    summarize(rows, criteria)
 
 
 if __name__ == "__main__":

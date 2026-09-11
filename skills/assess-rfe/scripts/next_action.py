@@ -57,6 +57,8 @@ import os
 import subprocess
 import sys
 
+from agent_types import agent_type_for_project
+
 
 def _read_keys(path):
     """Read keys from a file, one per line. Returns [] if missing."""
@@ -71,10 +73,14 @@ def _completed_keys(run_dir):
     return {f[: -len(".result.md")] for f in os.listdir(run_dir) if f.endswith(".result.md")}
 
 
+def _project_for_run(run_dir):
+    """Jira project key for a run dir (``assessments/<PROJECT>/<timestamp>``)."""
+    return os.path.basename(os.path.dirname(os.path.abspath(run_dir)))
+
+
 def _total_from_cache(run_dir, cache_dir):
     """Count cached issues for this run's project (for reporting only)."""
-    project = os.path.basename(os.path.dirname(os.path.abspath(run_dir)))
-    project_cache = os.path.join(cache_dir, project)
+    project_cache = os.path.join(cache_dir, _project_for_run(run_dir))
     if not os.path.isdir(project_cache):
         return 0
     return len([f for f in os.listdir(project_cache) if f.endswith(".md")])
@@ -142,8 +148,12 @@ def main():
         print(f"PENDING={len(pending)}")
         print(f"COMPLETED={len(completed)}")
         print(f"TOTAL={total}")
+        # This NEXT: line is the authoritative instruction after a compaction —
+        # the coordinator follows it over anything it remembers — so it must name
+        # the scorer that matches the run's project, not always the RFE one.
+        agent_type = agent_type_for_project(_project_for_run(run_dir))
         print(
-            f"NEXT: launch one assess-rfe:rfe-scorer background agent (model opus, "
+            f"NEXT: launch one assess-rfe:{agent_type} background agent (model opus, "
             f"run_in_background) per key listed after '---', then immediately run: "
             f"python3 {_sibling('wait_wave.py')} {os.path.abspath(run_dir)} "
             f"--keys-file {os.path.abspath(wave_file)}  "

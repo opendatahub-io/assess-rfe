@@ -20,6 +20,12 @@ import argparse
 import os
 import sys
 
+# The shared scripts live next to this file, so resolving from __file__ is correct
+# whichever skill is driving the run — ${CLAUDE_SKILL_DIR} is not, since it points
+# at assess-initiative in an initiative session. This is also the form next_action.py
+# uses in its NEXT: lines, so the whole loop speaks one path shape.
+SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
+
 LOOP_PROTOCOL = """\
 Resume the bulk assessment dispatch loop. next_action.py decides what runs next
 and when the run is complete — do NOT decide completion yourself, and do NOT
@@ -31,18 +37,17 @@ EVERY script prints a NEXT: line with the exact command to run next. Just do
 what the latest NEXT: line says — your memory of these steps may be degraded
 after this compaction, so trust the script output over memory.
 
-Loop (run scripts as simple commands; ${{CLAUDE_SKILL_DIR}} is the assess-rfe
-skill directory):
-1. next_action.py {run_dir} --batch-size 30
-2. ACTION=launch_wave: launch one background rfe-scorer agent per key listed
+Loop (each command below is complete as written — run it verbatim):
+1. python3 {scripts}/next_action.py {run_dir} --batch-size 30
+2. ACTION=launch_wave: launch one background {agent_type} agent per key listed
    after the '---' (wave.txt is already written), then FOLLOW the NEXT: line —
-   it tells you to run wait_wave.py {run_dir} --keys-file {run_dir}/wave.txt.
+   it tells you to run python3 {scripts}/wait_wave.py {run_dir} --keys-file {run_dir}/wave.txt.
    Re-run wait_wave.py while it exits 3 (its NEXT: line repeats the command);
    when it exits 0, its NEXT: line points back to step 1.
    Do NOT instead "wait for agent completion notifications" — that stalls and
    kills the run.
 3. ACTION=done: the run is complete (scores.csv exists). Run
-   summarize_run.py {run_dir} and present the summary."""
+   python3 {scripts}/summarize_run.py {run_dir} and present the summary."""
 
 
 def _find_active_runs(assess_dir):
@@ -73,6 +78,11 @@ def _counts(project, run_dir, cache_dir):
 
 
 def main():
+    # Imported here, not at module scope: the try/except around main() below is
+    # what keeps this hook from ever failing the session, and a module-level
+    # import would run outside it.
+    from agent_types import agent_type_for_project
+
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -100,7 +110,13 @@ def main():
         print(f"TOTAL={total}")
         print(f"QUEUE_REMAINING={queued}")
         print()
-        print(LOOP_PROTOCOL.format(run_dir=run_dir))
+        print(
+            LOOP_PROTOCOL.format(
+                run_dir=run_dir,
+                agent_type=agent_type_for_project(project),
+                scripts=SCRIPTS_DIR,
+            )
+        )
 
 
 if __name__ == "__main__":

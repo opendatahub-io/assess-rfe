@@ -1,6 +1,6 @@
 {
   "name": "assess-rfe",
-  "description": "Assess RFEs against quality criteria using a structured rubric",
+  "description": "Assess RFEs and Initiatives against quality criteria using structured rubrics",
   "version": "1.0.0",
   "author": {
     "name": "Jason Greene"

@@ -157,7 +157,7 @@ Bulk — after Phase 3, present the summary analysis from the CSV to the user. I
 
 | Script | Purpose |
 |--------|---------|
-| `dump_jira.py` | Fetches all issues from a Jira project via REST API v3, converts ADF to markdown, writes to `/tmp/rfe-assess/<PROJECT>/` |
+| `dump_jira.py` | Fetches all issues from a Jira project via REST API v3, converts ADF to markdown, writes to `/tmp/rfe-assess/<PROJECT>/`. Prunes cached files the fetch did not write, so the cache always matches the query that produced it (`--no-prune` to keep them) |
 | `preflight.py` | Checks env vars, cache state, and current run status |
 | `setup_run.py` | Creates timestamped run directory with resume support (detects incomplete runs via `current` symlink) |
 | `agent_prompt.md` | Full scoring rubric and instructions for assessment agents — use verbatim |
@@ -166,6 +166,7 @@ Bulk — after Phase 3, present the summary analysis from the CSV to the user. I
 | `next_batch.py` | (Superseded by `next_action.py` for the bulk loop.) Pops the next N keys from the queue file by mutating it |
 | `check_progress.py` | Reports completed vs total issues for a run directory (used by `dispatch_context.py`) |
 | `dispatch_context.py` | Post-compaction recovery: re-injects the active run's state and loop steps; invoked by the `SessionStart` compact hook (`hooks/hooks.json`) |
+| `agent_types.py` | Maps a Jira project to its scorer subagent (`RHOAIENG` → `initiative-scorer`, otherwise `rfe-scorer`); imported by `next_action.py` and `dispatch_context.py` so the two cannot disagree |
 | `parse_results.py` | Extracts scores from `.result.md` files into `scores.csv`; handles format variants |
 | `fetch_single.py` | Fetches a single Jira issue via REST API v3 (fallback for when MCP is unavailable), writes to `tmp/rfe-assess/single/` |
 | `prep_single.py` | Cleans up stale data/result files for a key in `tmp/rfe-assess/single/` before a single-mode run |
